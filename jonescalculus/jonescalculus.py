@@ -98,13 +98,13 @@ class JonesVector(np.matrix):
             elif preset == 'V':
                 x, y = 0, 1
             elif preset == 'D':
-                x, y = math.sqrt(2)*1, math.sqrt(2)*1
+                x, y = 1/math.sqrt(2)*1, 1/math.sqrt(2)*1
             elif preset == 'A':
-                x, y = math.sqrt(2)*1, -math.sqrt(2)*1
+                x, y = 1/math.sqrt(2)*1, -1/math.sqrt(2)*1
             elif preset == 'R':
-                x, y = math.sqrt(2)*1, -math.sqrt(2)*1j
+                x, y = 1/math.sqrt(2)*1, -1/math.sqrt(2)*1j
             elif preset == 'L':
-                x, y = math.sqrt(2)*1, math.sqrt(2)*1j
+                x, y = 1/math.sqrt(2)*1, 1/math.sqrt(2)*1j
             else:
                 raise ValueError('Invalid preset')
 
@@ -140,10 +140,8 @@ class JonesVector(np.matrix):
         """
         :return: The angle (in rad) of the polarization vector relative to the x-axis.
         """
-        # Only works for linear polarized light. What about rotated ellipses?
-        #return math.acos(self.x.real/self.x)
-        raise NotImplementedError()
-
+        return math.acos(abs(self.x)/self.power)
+        
     def normalize(self):
         norm = self.power
         self[0, 0] = self[0, 0]/norm
