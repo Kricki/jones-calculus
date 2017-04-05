@@ -12,7 +12,7 @@ See [Wikipedia](https://en.wikipedia.org/wiki/Jones_calculus) for a detailed des
 
 # Example
 Transmit H-polarized light through a half-wave plate at 45 deg: 
-```
+```python
 import math
 from jonescalculus import jonescalculus as jones
 

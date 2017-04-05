@@ -38,6 +38,22 @@ class JonesMatrix(np.matrix):
         else:
             return np.matmul(self, other)
 
+    def rotate(self, angle):
+        """
+        Rotate the optical element (described by the JonesMatrix) around the angle "angle".
+        
+        :param float angle: Rotation angle in rad
+        :return: 
+        """
+        def rotation_matrix(a):
+            return np.matrix([[math.cos(a), math.sin(a)], [-math.sin(a), math.cos(a)]])
+
+        rot_jm = JonesMatrix(rotation_matrix(-angle)*self*rotation_matrix(angle))
+        self[0, 0] = rot_jm[0, 0]
+        self[0, 1] = rot_jm[0, 1]
+        self[1, 0] = rot_jm[1, 0]
+        self[1, 1] = rot_jm[1, 1]
+
 
 class PolarizationFilter(JonesMatrix):
     def __new__(cls, angle):
@@ -137,12 +153,64 @@ class JonesVector(np.matrix):
 
     @property
     def x_angle(self):
-        """
+        """ 
+        Return the angle of the polarization ellipse relative to the x-axis
+        
+        Reference: Saleh, Bahaa EA, and Malvin Carl Teich. "Fundamentals of Photonics." 2nd edition (2007)
+        
         :return: The angle (in rad) of the polarization vector relative to the x-axis.
         """
-        return math.acos(abs(self.x)/self.power)
+
+        # Can probably be simplified...
+        r = abs(self.y)/abs(self.x)
+        dphase = cmath.phase(self.y)-cmath.phase(self.x)
+
+        if self.x > 0 and self.y >= 0:
+            if self.x > self.y:
+                angle = 1/2*(math.atan(2*r/(1-r**2)*math.cos(dphase)))
+            else:
+                angle = 1/2*(math.atan(2*r/(1-r**2)*math.cos(dphase))) + math.pi/2
+        elif self.x < 0 < self.y:
+            if abs(self.x) < self.y:
+                angle = 1/2*(math.atan(2*r/(1-r**2)*math.cos(dphase))) + math.pi/2
+            else:
+                angle = 1/2*(math.atan(2*r/(1-r**2)*math.cos(dphase))) + math.pi
+        elif self.x < 0 and self.y < 0:
+            if abs(self.x) > abs(self.y):
+                angle = 1/2*(math.atan(2*r/(1-r**2)*math.cos(dphase)))
+            else:
+                angle = 1/2*(math.atan(2*r/(1-r**2)*math.cos(dphase))) + math.pi/2
+        else:
+            if self.x < abs(self.y):
+                angle = 1/2*(math.atan(2*r/(1-r**2)*math.cos(dphase))) + math.pi/2
+            else:
+                angle = 1/2*(math.atan(2*r/(1-r**2)*math.cos(dphase))) + math.pi
+
+        return angle
+
+    @property
+    def ellipticity(self):
+        """
+        Return the ellipticity of the polarization state.
         
+        The ellipticity is defined as the ratio between the semi-minor and the semi-major axis of the polarization
+        ellipses.
+        
+        Reference: Saleh, Bahaa EA, and Malvin Carl Teich. "Fundamentals of Photonics." 2nd edition (2007)
+        
+        :return float: Ellipticity
+        """
+        r = abs(self.y) / abs(self.x)
+        dphase = cmath.phase(self.y) - cmath.phase(self.x)
+        chi = 1/2*(math.asin(2*r/(1+r**2)*math.sin(dphase)))
+
+        return math.tan(chi)
+
     def normalize(self):
+        """
+        Normalize the Jones vector to a power of 1.
+        
+        """
         norm = self.power
         self[0, 0] = self[0, 0]/norm
         self[1, 0] = self[1, 0]/norm
@@ -156,4 +224,13 @@ if __name__ == '__main__':
     jv2 = qwp*hwp*jv1
     print(jv2)
     print(jv2.power)
+
+    angle_hwp = np.linspace(0, math.radians(90), 1000)
+    angle_out = [(HalfWavePlate(a) * jv1).x_angle for a in angle_hwp]
+    angle_out2 = [(HalfWavePlate(a) * jv1).x_angle2 for a in angle_hwp]
+
+    from matplotlib import pyplot as plt
+    plt.plot(angle_hwp, angle_out)
+    plt.plot(angle_hwp, angle_out2)
+    plt.show()
 
