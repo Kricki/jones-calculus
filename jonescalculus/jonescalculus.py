@@ -9,6 +9,9 @@ import numpy as np
 import math
 import cmath
 
+import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+
 __author__ = 'Christian Noelleke (https://github.com/Kricki)'
 
 
@@ -169,7 +172,7 @@ class JonesVector(np.matrix):
             if self.x > self.y:
                 angle = 1/2*(math.atan(2*r/(1-r**2)*math.cos(dphase)))
             else:
-                angle = 1/2*(math.atan(2*r/(1-r**2)*math.cos(dphase))) + math.pi/2
+                angle = 1/2*(np.arctan(2*r/(1-r**2)*math.cos(dphase))) + math.pi/2
         elif self.x < 0 < self.y:
             if abs(self.x) < self.y:
                 angle = 1/2*(math.atan(2*r/(1-r**2)*math.cos(dphase))) + math.pi/2
@@ -215,22 +218,34 @@ class JonesVector(np.matrix):
         self[0, 0] = self[0, 0]/norm
         self[1, 0] = self[1, 0]/norm
 
+    def plot(self):
+        """
+        Plot the polarization ellipse.
+        
+        """
+        dphase = cmath.phase(self.y) - cmath.phase(self.x)
+        x_angle = self.x_angle
+
+        # semi-minor and semi-major axis of ellipse
+        # see https://en.wikipedia.org/wiki/Elliptical_polarization
+        a = math.sqrt((1+math.sqrt(1-math.sin(2*x_angle)**2*math.sin(dphase)**2))/2)
+        b = math.sqrt((1-math.sqrt(1-math.sin(2*x_angle)**2*math.sin(dphase)**2))/2)
+        el = Ellipse(xy=(0, 0), width=a, height=b, angle=math.degrees(x_angle), edgecolor='r', fc='None', lw=1)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.add_patch(el)
+        ax.set_xlim(-0.5, 0.5)
+        ax.set_ylim(-0.5, 0.5)
+        ax.grid(color='black')
+
+        plt.show()
+
 
 if __name__ == '__main__':
     jv1 = JonesVector(preset='H')
     hwp = HalfWavePlate(math.radians(22.5))
     qwp = QuarterWavePlate(math.radians(45))
+    jv1 = qwp*jv1
 
-    jv2 = qwp*hwp*jv1
-    print(jv2)
-    print(jv2.power)
-
-    angle_hwp = np.linspace(0, math.radians(90), 1000)
-    angle_out = [(HalfWavePlate(a) * jv1).x_angle for a in angle_hwp]
-    angle_out2 = [(HalfWavePlate(a) * jv1).x_angle2 for a in angle_hwp]
-
-    from matplotlib import pyplot as plt
-    plt.plot(angle_hwp, angle_out)
-    plt.plot(angle_hwp, angle_out2)
-    plt.show()
-
+    jv1.plot()
